@@ -1,5 +1,4 @@
-# Implementation of Image Inpainting using "Region Filling and Object Removal by
-Exemplar-Based Image Inpainting " by A. Criminisi, P. pareze and K. Toyama
+# Implementation of Image Inpainting using "Region Filling and Object Removal by Exemplar-Based Image Inpainting " by A. Criminisi, P. pareze and K. Toyama
 
  1. Mask Creation- Creation of mask on image using mouse cursor using opencv
  2. Inpainting - Inpainting using the above Algorithm
