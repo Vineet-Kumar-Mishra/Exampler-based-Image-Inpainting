@@ -84,7 +84,7 @@ class inpaint_image:
     def front_finder(self):
         self.front = (filters.laplace(self.working_mask)>0).astype('uint8')
         
-    # We need to keep the centre of the patch on the required points
+    # We need to keep the centre of the patch on the requifirebrick2 points
     # We assume a patch around the point
     
     def patch_around_point(self, point):
@@ -147,9 +147,9 @@ class inpaint_image:
     
     def confidence_updater(self):
         confidence_updates = np.copy(self.confidence)
-        required_front = np.argwhere(self.front == 1)
+        requifirebrick2_front = np.argwhere(self.front == 1)
         
-        for point in required_front:
+        for point in requifirebrick2_front:
             patch = self.patch_around_point(point)
             confidence_updates[point[0],point[1]] = sum(sum(self.patch_on_source(self.confidence,patch)))/self.area_patch(patch)
             
@@ -224,9 +224,9 @@ class inpaint_image:
         
         max_gradient = np.zeros([height, width, 2])
 
-        required_front = np.argwhere(self.front == 1)
+        requifirebrick2_front = np.argwhere(self.front == 1)
         
-        for point in required_front:
+        for point in requifirebrick2_front:
             patch = self.patch_around_point(point)
             patch_x_gradient = self.patch_on_source(grad_x, patch)
             patch_y_gradient = self.patch_on_source(grad_y, patch)
@@ -256,7 +256,7 @@ class inpaint_image:
     
     # we require a source patch i.e exemplar
     
-    def required_source_patch(self, target_pixel):
+    def requifirebrick2_source_patch(self, target_pixel):
         
         target_patch = self.patch_around_point(target_pixel)
         height, width = self.working_image.shape[:2]
@@ -276,7 +276,7 @@ class inpaint_image:
                 if self.patch_on_source(self.working_mask, source_patch).sum() != 0:
                     continue
 
-                difference = self.squared_path_difference(lab_image,target_patch,source_patch)
+                difference = self.squafirebrick2_path_difference(lab_image,target_patch,source_patch)
 
                 if best_match is None or difference < best_match_difference:
                     best_match = source_patch
@@ -285,15 +285,15 @@ class inpaint_image:
         return best_match
     
     # we require a path difference for patch and source
-    def squared_path_difference(self, image, target_patch, source_patch):
+    def squafirebrick2_path_difference(self, image, target_patch, source_patch):
         
         mask = 1 - self.patch_on_source(self.working_mask, target_patch)
         rgb_mask = color.gray2rgb(mask)
         target_data = self.patch_on_source(image,target_patch) * rgb_mask
         source_data = self.patch_on_source(image,source_patch) * rgb_mask
         
-        squared_distance = ((target_data - source_data)**2).sum()
-        return squared_distance
+        squafirebrick2_distance = ((target_data - source_data)**2).sum()
+        return squafirebrick2_distance
     
     
     # We need to update the image after each inpaint interation
@@ -348,10 +348,22 @@ class inpaint_image:
             self.update_priority()
             
             target_pixel = self.highest_priority_point()
-            source_patch = self.required_source_patch(target_pixel)
+            source_patch = self.requifirebrick2_source_patch(target_pixel)
             self.update_image(target_pixel, source_patch)
             finish_check = not self.task_finished()
         return self.working_image
+
+
+
+#----defining a function to get patch size----------
+
+patch_size_data = None
+def activate_patch():
+    global patch_size_data
+    patch_size_data = patch_size.get()
+    msg.showinfo("Patch",f"patch size of {patch_size_data} received ! \n Please press Start Inpainter !")
+
+    
 
 
 #----Defining the paint_mask function to create mask--------
@@ -360,9 +372,9 @@ path = None # same path variable is used multiple times
 
 def paint_mask():
 
-    global path, inpaint_progress_label, inpaint_progress, status
+    global path, inpaint_progress_label, inpaint_progress, status, patch_entry, patch_size, patch_button
 
-    status.config(bg = "green", text = "STATUS : ACTIVE")
+    status.config(bg = "SpringGreen2", text = "STATUS : ACTIVE")
     
     path = filedialog.askopenfilename()
 
@@ -390,13 +402,19 @@ def paint_mask():
             # A message of completion and next instruction is provided
 
             msg.showinfo("MASK SAVED !","Dear User the mask has been saved Successfully !")
-            instruction.set("Please Press Inpainter to start inpainting")
-            inpaint_button = Button(root, text = "Start Inpainting" ,command = start_inpaint, padx = 10, pady = 10,
-                         relief = GROOVE, bg = "cornsilk4", fg = "black")
-            inpaint_button.pack()
-            inpaint_progress_label = Label(root, text = " ", bg = "azure3", font = ('Comic Sans MS', 12, 'italic'),fg = "black", padx = 10, pady = 10)
+            instruction.set("Please provide a patch size (odd number) &\n Press Start Inpainter to start inpainting")
+            
+            patch_entry = Entry(root, textvariable = patch_size, fg = "black", relief = GROOVE)
+            patch_entry.pack()
+            patch_button = Button(root, text="Patch Size", bg = "LightSteelBlue4", padx = 10, pady = 10, command = activate_patch, relief = GROOVE, fg = "black" )
+            patch_button.pack()
+            inpaint_progress_label = Label(root, text = " ", bg = "SlateGray2", font = ('Comic Sans MS', 12, 'italic'),fg = "black", padx = 10, pady = 10)
             inpaint_progress_label.pack()
-            status.config(text = "STATUS : INACTIVE", bg = "red")
+            inpaint_button = Button(root, text = "Start Inpainter" ,command = start_inpaint, padx = 10, pady = 10,
+                         relief = GROOVE, bg = "LightSteelBlue4", fg = "black")
+            inpaint_button.pack()
+            status.config(text = "STATUS : INACTIVE", bg = "firebrick2")
+            
             break
         else:
             mask_new = cv2.cvtColor(inpaintmask,cv2.COLOR_BGR2RGB)
@@ -405,7 +423,7 @@ def paint_mask():
             
             cv2.destroyAllWindows()
             msg.showinfo("TRY AGAIN ","Dear User the mask has not been saved !")
-            status.config(bg = "red",text="STATUS : INACTIVE")
+            status.config(bg = "firebrick2",text="STATUS : INACTIVE")
             break
     
 
@@ -413,11 +431,11 @@ def paint_mask():
 
 def start_inpaint():
 
-    global path, inpaint_progress_label, status
+    global path, inpaint_progress_label, status, patch_size_data, output_button
 
     # Set the Status and label of execution
 
-    status.config(bg = "green", text = "STATUS : ACTIVE")
+    status.config(bg = "SpringGreen2", text = "STATUS : ACTIVE")
     inpaint_progress_label.config(text = "Please wait....")
 
     image = io.imread(path)
@@ -428,11 +446,11 @@ def start_inpaint():
 
     mask[mask>threshold] = 1
     mask[mask<threshold] = 0
-    output_image = inpaint_image(image, mask, 23).inpainter()
+    output_image = inpaint_image(image, mask, patch_size_data).inpainter()
     inpaint_progress_label.config(text = "Completed !")
     io.imsave("restored.jpg",output_image)
-    msg.showinfo("TASK","Task has been completed \n Please check the result in directory stored as restored.jpg")
-    status.config(bg = "red", text = "STATUS : INACTIVE")
+    msg.showinfo("TASK","Task has been completed \n Please check the result in current directory as restored.jpg !")
+    status.config(bg = "firebrick2", text = "STATUS : INACTIVE")
 
 
 #----Designing the GUI------------------------------------------------
@@ -443,18 +461,18 @@ def start_inpaint():
 root = Tk()
 root.geometry("500x500")
 root.title("INPAINTER")
-root.configure(bg = "azure3")
+root.configure(bg = "SlateGray2")
 root.iconbitmap(r'C:\Users\mishr\Desktop\Inpaint Project\icon.ico')
 # We require a status bar to show status
 status = None
-status = Label(text = "STATUS : INACTIVE", bg = "red", pady = 10, relief = RIDGE)
+status = Label(text = "STATUS : INACTIVE", bg = "firebrick2", pady = 10, relief = RIDGE)
 status.pack(fill = X, side = BOTTOM)
 
 # We require one label to show the task for begining the masking
 
 masking_label = None
 masking_label = Label(root, text = "Welcome to Image Inpainter app \n Press Start MASKING to draw on image and \n Press S to Save and Stop", 
-                      bg = "azure3", font = ('Comic Sans MS', 12, 'italic'), 
+                      bg = "SlateGray2", font = ('Comic Sans MS', 12, 'italic'), 
                       fg = "black", padx = 10, pady = 10)
 
 masking_label.pack(fill = X, side = TOP)
@@ -463,21 +481,26 @@ masking_label.pack(fill = X, side = TOP)
 
 masking_button = None
 masking_button = Button(root,text = "Start Masking" ,command = paint_mask, padx = 10, pady = 10,
-                         relief = GROOVE, bg = "cornsilk4", fg = "black")
+                         relief = GROOVE, bg = "LightSteelBlue4", fg = "black")
 masking_button.pack(side = TOP)
 
+
+# Create a entry for the size of patc
+patch_entry = None
+patch_size = IntVar()
+patch_size.set(11)
+patch_button = None
 # We require a label to instruct user to begin inpainting
 
 intruction_label = None 
 instruction = None
 instruction = StringVar()
 instruction.set(" ")
-instruction_label = Label(root,textvariable = instruction, bg = "azure3", font = ('Comic Sans MS', 12, 'italic'),fg = "black", padx = 10, pady = 10)
+instruction_label = Label(root,textvariable = instruction, bg = "SlateGray2", font = ('Comic Sans MS', 12, 'italic'),fg = "black", padx = 10, pady = 10)
 instruction_label.pack()
 
 # We require a button to start inpainting
 inpaint_button =None 
 inpaint_progress_label = None
-
 
 root.mainloop()
