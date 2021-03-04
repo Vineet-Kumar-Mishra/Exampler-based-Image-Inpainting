@@ -84,7 +84,7 @@ class inpaint_image:
     def front_finder(self):
         self.front = (filters.laplace(self.working_mask)>0).astype('uint8')
         
-    # We need to keep the centre of the patch on the requifirebrick2 points
+    # We need to keep the centre of the patch on the required points
     # We assume a patch around the point
     
     def patch_around_point(self, point):
@@ -147,9 +147,9 @@ class inpaint_image:
     
     def confidence_updater(self):
         confidence_updates = np.copy(self.confidence)
-        requifirebrick2_front = np.argwhere(self.front == 1)
+        required_front = np.argwhere(self.front == 1)
         
-        for point in requifirebrick2_front:
+        for point in required_front:
             patch = self.patch_around_point(point)
             confidence_updates[point[0],point[1]] = sum(sum(self.patch_on_source(self.confidence,patch)))/self.area_patch(patch)
             
@@ -158,7 +158,7 @@ class inpaint_image:
     # we need area of patch to get confidence
     
     def area_patch(self,patch):
-        return(1+patch[0][1]-patch[0][0])*(1+patch[1][1]-patch[1][0])
+        return(self.patch)**2
     
     
     # for updating priority we require data updates
@@ -190,7 +190,7 @@ class inpaint_image:
 
         height, width = normal.shape[:2]
         
-        # norm matrix is 3d matrix i.e. RGB
+        # norm matrix 
         
         norm = np.sqrt(y_normal**2 + x_normal**2).reshape(height, width, 1).repeat(2, axis=2)
         norm[norm == 0] = 1
@@ -224,9 +224,9 @@ class inpaint_image:
         
         max_gradient = np.zeros([height, width, 2])
 
-        requifirebrick2_front = np.argwhere(self.front == 1)
+        required_front = np.argwhere(self.front == 1)
         
-        for point in requifirebrick2_front:
+        for point in required_front:
             patch = self.patch_around_point(point)
             patch_x_gradient = self.patch_on_source(grad_x, patch)
             patch_y_gradient = self.patch_on_source(grad_y, patch)
@@ -252,11 +252,11 @@ class inpaint_image:
     
     def patch_shape(self,patch):
         return (1+patch[0][1]-patch[0][0]), (1+patch[1][1]-patch[1][0])
-    
+        
     
     # we require a source patch i.e exemplar
     
-    def requifirebrick2_source_patch(self, target_pixel):
+    def required_source_patch(self, target_pixel):
         
         target_patch = self.patch_around_point(target_pixel)
         height, width = self.working_image.shape[:2]
@@ -276,7 +276,7 @@ class inpaint_image:
                 if self.patch_on_source(self.working_mask, source_patch).sum() != 0:
                     continue
 
-                difference = self.squafirebrick2_path_difference(lab_image,target_patch,source_patch)
+                difference = self.squared_path_difference(lab_image,target_patch,source_patch)
 
                 if best_match is None or difference < best_match_difference:
                     best_match = source_patch
@@ -285,15 +285,15 @@ class inpaint_image:
         return best_match
     
     # we require a path difference for patch and source
-    def squafirebrick2_path_difference(self, image, target_patch, source_patch):
+    def squared_path_difference(self, image, target_patch, source_patch):
         
         mask = 1 - self.patch_on_source(self.working_mask, target_patch)
         rgb_mask = color.gray2rgb(mask)
         target_data = self.patch_on_source(image,target_patch) * rgb_mask
         source_data = self.patch_on_source(image,source_patch) * rgb_mask
         
-        squafirebrick2_distance = ((target_data - source_data)**2).sum()
-        return squafirebrick2_distance
+        squared_distance = ((target_data - source_data)**2).sum()
+        return squared_distance
     
     
     # We need to update the image after each inpaint interation
@@ -348,7 +348,7 @@ class inpaint_image:
             self.update_priority()
             
             target_pixel = self.highest_priority_point()
-            source_patch = self.requifirebrick2_source_patch(target_pixel)
+            source_patch = self.required_source_patch(target_pixel)
             self.update_image(target_pixel, source_patch)
             finish_check = not self.task_finished()
         return self.working_image
@@ -463,7 +463,9 @@ root.geometry("500x500")
 root.title("INPAINTER")
 root.configure(bg = "SlateGray2")
 root.iconbitmap(r'C:\Users\mishr\Desktop\Inpaint Project\icon.ico')
+
 # We require a status bar to show status
+
 status = None
 status = Label(text = "STATUS : INACTIVE", bg = "firebrick2", pady = 10, relief = RIDGE)
 status.pack(fill = X, side = BOTTOM)
